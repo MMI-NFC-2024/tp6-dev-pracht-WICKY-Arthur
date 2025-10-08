@@ -1,0 +1,37 @@
+---
+import penguins from "../../assets/penguins.json";
+import Layout from "../../layouts/Layout.astro";
+import Menu from "../../components/Menu.astro";
+
+// Déterminer automatiquement la liste des espèces (avec map et Set)
+const species = [...new Set(penguins.map((p) => p.species))].sort();
+---
+
+<Layout title="Liste des espèces de pingouins">
+    <Menu />
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">
+            Espèces de pingouins
+        </h1>
+
+        <div class="flex flex-col items-center">
+            <ul class="w-full max-w-md space-y-4">
+                {
+                    species.map((specie) => (
+                        <li class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                            <a
+                                href={`/rendu-statique/${specie.toLowerCase()}`}
+                                class="block p-4 text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                                <span class="flex items-center justify-between">
+                                    <span>{specie}</span>
+                                    <span class="text-gray-400">&rarr;</span>
+                                </span>
+                            </a>
+                        </li>
+                    ))
+                }
+            </ul>
+        </div>
+    </main>
+</Layout>
