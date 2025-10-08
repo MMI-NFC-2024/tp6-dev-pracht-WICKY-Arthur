@@ -2,14 +2,24 @@
 import penguins from "../assets/penguins.json";
 import Layout from "../layouts/Layout.astro";
 import Menu from "../components/Menu.astro";
+import PlotFigure from "../components/PlotFigure.astro";
+import * as Plot from "@observablehq/plot";
+
+// Extraire la liste des espèces uniques
 const species = [...new Set(penguins.map((c) => c.species))].sort();
+
+// Regrouper les pingouins par espèce
+const penguinsBySpecies = {};
+species.forEach((specie) => {
+    penguinsBySpecies[specie] = penguins.filter((p) => p.species === specie);
+});
 ---
 
 <Layout title="Slider des Pingouins">
     <Menu />
     <main class="max-w-7xl mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-8 text-center">
-            Galerie de Pingouins
+            Graphiques des Pingouins par Espèce
         </h1>
 
         <!-- Navigation par espèce -->
@@ -20,7 +30,7 @@ const species = [...new Set(penguins.map((c) => c.species))].sort();
                     <a
                         href="#all"
                         class="inline-block px-3 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                        id="filter-all">Tous</a
+                        id="filter-all">Toutes les espèces</a
                     >
                 </li>
                 {
@@ -39,7 +49,7 @@ const species = [...new Set(penguins.map((c) => c.species))].sort();
             </ul>
         </div>
 
-        <!-- Slider des pingouins -->
+        <!-- Slider des graphiques par espèce -->
         <div class="w-full max-w-6xl mx-auto relative">
             <div class="overflow-hidden" id="slider-container">
                 <div
@@ -47,52 +57,182 @@ const species = [...new Set(penguins.map((c) => c.species))].sort();
                     id="slider-track"
                 >
                     {
-                        penguins.map((penguin) => (
+                        species.map((specie) => (
                             <div
-                                class="slide w-full md:w-1/2 lg:w-1/3 flex-shrink-0 p-2 transition-opacity duration-300"
-                                data-species={penguin.species.toLowerCase()}
+                                class="slide w-full flex-shrink-0 p-2 transition-opacity duration-300"
+                                data-species={specie.toLowerCase()}
                             >
                                 <div class="bg-white rounded-lg shadow-md h-full p-6 border border-gray-200 hover:shadow-lg transition-shadow">
                                     <h3 class="text-xl font-bold mb-3 text-blue-600">
-                                        {penguin.species}
+                                        {specie}
                                     </h3>
-                                    <div class="space-y-2 text-gray-700">
-                                        <p>
-                                            <span class="font-semibold">
-                                                Île:
-                                            </span>{" "}
-                                            {penguin.island}
-                                        </p>
-                                        <p>
-                                            <span class="font-semibold">
-                                                Longueur du bec:
-                                            </span>{" "}
-                                            {penguin.culmen_length_mm} mm
-                                        </p>
-                                        <p>
-                                            <span class="font-semibold">
-                                                Profondeur du bec:
-                                            </span>{" "}
-                                            {penguin.culmen_depth_mm} mm
-                                        </p>
-                                        <p>
-                                            <span class="font-semibold">
-                                                Longueur de nageoire:
-                                            </span>{" "}
-                                            {penguin.flipper_length_mm} mm
-                                        </p>
-                                        <p>
-                                            <span class="font-semibold">
-                                                Masse:
-                                            </span>{" "}
-                                            {penguin.body_mass_g} g
-                                        </p>
-                                        <p>
-                                            <span class="font-semibold">
-                                                Sexe:
-                                            </span>{" "}
-                                            {penguin.sex}
-                                        </p>
+
+                                    {/* Distribution par île */}
+                                    <div class="mb-6">
+                                        <h4 class="text-lg font-semibold mb-2">
+                                            Distribution par île
+                                        </h4>
+                                        <div class="h-64">
+                                            <PlotFigure
+                                                options={{
+                                                    width: 500,
+                                                    height: 240,
+                                                    margin: 40,
+                                                    grid: true,
+                                                    marks: [
+                                                        Plot.barY(
+                                                            penguinsBySpecies[
+                                                                specie
+                                                            ],
+                                                            Plot.groupX(
+                                                                { y: "count" },
+                                                                {
+                                                                    x: "island",
+                                                                    fill: "island",
+                                                                    sort: {
+                                                                        x: "y",
+                                                                        reverse: true,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        ),
+                                                        Plot.ruleY([0]),
+                                                    ],
+                                                    style: {
+                                                        fontSize: 12,
+                                                    },
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Caractéristiques morphologiques */}
+                                    <div class="mt-8">
+                                        <h4 class="text-lg font-semibold mb-2">
+                                            Caractéristiques morphologiques
+                                        </h4>
+                                        <div class="h-64">
+                                            <PlotFigure
+                                                options={{
+                                                    width: 500,
+                                                    height: 240,
+                                                    margin: 40,
+                                                    grid: true,
+                                                    marks: [
+                                                        Plot.dot(
+                                                            penguinsBySpecies[
+                                                                specie
+                                                            ],
+                                                            {
+                                                                x: "culmen_length_mm",
+                                                                y: "culmen_depth_mm",
+                                                                r: "body_mass_g",
+                                                                fill: "sex",
+                                                                stroke: "black",
+                                                                strokeWidth: 0.5,
+                                                                opacity: 0.7,
+                                                                title: (d) =>
+                                                                    `${d.sex || "Inconnu"}\nMasse: ${d.body_mass_g || "?"}g\nÎle: ${d.island}`,
+                                                            },
+                                                        ),
+                                                        Plot.frame(),
+                                                    ],
+                                                    x: {
+                                                        label: "Longueur du bec (mm)",
+                                                        grid: true,
+                                                    },
+                                                    y: {
+                                                        label: "Profondeur du bec (mm)",
+                                                        grid: true,
+                                                    },
+                                                    color: {
+                                                        legend: true,
+                                                    },
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Statistiques */}
+                                    <div class="mt-8">
+                                        <h4 class="text-lg font-semibold mb-2">
+                                            Statistiques
+                                        </h4>
+                                        <div class="overflow-x-auto">
+                                            <table class="min-w-full text-sm">
+                                                <thead>
+                                                    <tr class="bg-gray-100">
+                                                        <th class="text-left p-2">
+                                                            Caractéristique
+                                                        </th>
+                                                        <th class="text-right p-2">
+                                                            Moyenne
+                                                        </th>
+                                                        <th class="text-right p-2">
+                                                            Min
+                                                        </th>
+                                                        <th class="text-right p-2">
+                                                            Max
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="p-2 border-t">
+                                                            Longueur du bec (mm)
+                                                        </td>
+                                                        <td class="p-2 border-t text-right">
+                                                            {Math.round(
+                                                                (penguinsBySpecies[
+                                                                    specie
+                                                                ].reduce(
+                                                                    (sum, p) =>
+                                                                        sum +
+                                                                        (p.culmen_length_mm ||
+                                                                            0),
+                                                                    0,
+                                                                ) /
+                                                                    penguinsBySpecies[
+                                                                        specie
+                                                                    ].filter(
+                                                                        (p) =>
+                                                                            p.culmen_length_mm,
+                                                                    ).length) *
+                                                                    10,
+                                                            ) / 10}
+                                                        </td>
+                                                        <td class="p-2 border-t text-right">
+                                                            {Math.min(
+                                                                ...penguinsBySpecies[
+                                                                    specie
+                                                                ]
+                                                                    .map(
+                                                                        (p) =>
+                                                                            p.culmen_length_mm,
+                                                                    )
+                                                                    .filter(
+                                                                        Boolean,
+                                                                    ),
+                                                            )}
+                                                        </td>
+                                                        <td class="p-2 border-t text-right">
+                                                            {Math.max(
+                                                                ...penguinsBySpecies[
+                                                                    specie
+                                                                ]
+                                                                    .map(
+                                                                        (p) =>
+                                                                            p.culmen_length_mm,
+                                                                    )
+                                                                    .filter(
+                                                                        Boolean,
+                                                                    ),
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -131,15 +271,9 @@ const species = [...new Set(penguins.map((c) => c.species))].sort();
 
         // Variables du slider
         let currentIndex = 0;
-        let slidesToShow = getSlidesToShow();
+        // Pour ce type de graphique, on montre une seule espèce à la fois
+        const slidesToShow = 1;
         let visibleSlides = [...slides];
-
-        // Fonction pour déterminer le nombre de slides à afficher selon la taille de l'écran
-        function getSlidesToShow() {
-            if (window.innerWidth >= 1024) return 3; // lg
-            if (window.innerWidth >= 768) return 2; // md
-            return 1; // mobile
-        }
 
         // Initialiser le slider
         function initSlider() {
@@ -254,12 +388,6 @@ const species = [...new Set(penguins.map((c) => c.species))].sort();
                 updateSlideVisibility();
             });
         }
-
-        // Responsivité
-        window.addEventListener("resize", () => {
-            slidesToShow = getSlidesToShow();
-            updateSlider();
-        });
 
         // Initialisation
         initSlider();
