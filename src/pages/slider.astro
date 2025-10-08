@@ -1,0 +1,267 @@
+---
+import penguins from "../assets/penguins.json";
+import Layout from "../layouts/Layout.astro";
+import Menu from "../components/Menu.astro";
+const species = [...new Set(penguins.map((c) => c.species))].sort();
+---
+
+<Layout title="Slider des Pingouins">
+    <Menu />
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">
+            Galerie de Pingouins
+        </h1>
+
+        <!-- Navigation par espèce -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-2">Filtrer par espèce:</h2>
+            <ul class="flex flex-wrap gap-2 list-none p-0">
+                <li>
+                    <a
+                        href="#all"
+                        class="inline-block px-3 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                        id="filter-all">Tous</a
+                    >
+                </li>
+                {
+                    species.map((specie) => (
+                        <li>
+                            <a
+                                class="inline-block px-3 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
+                                href={`#${specie.toLowerCase()}`}
+                                data-filter={specie.toLowerCase()}
+                            >
+                                {specie}
+                            </a>
+                        </li>
+                    ))
+                }
+            </ul>
+        </div>
+
+        <!-- Slider des pingouins -->
+        <div class="w-full max-w-6xl mx-auto relative">
+            <div class="overflow-hidden" id="slider-container">
+                <div
+                    class="flex transition-transform duration-300"
+                    id="slider-track"
+                >
+                    {
+                        penguins.map((penguin) => (
+                            <div
+                                class="slide w-full md:w-1/2 lg:w-1/3 flex-shrink-0 p-2 transition-opacity duration-300"
+                                data-species={penguin.species.toLowerCase()}
+                            >
+                                <div class="bg-white rounded-lg shadow-md h-full p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                                    <h3 class="text-xl font-bold mb-3 text-blue-600">
+                                        {penguin.species}
+                                    </h3>
+                                    <div class="space-y-2 text-gray-700">
+                                        <p>
+                                            <span class="font-semibold">
+                                                Île:
+                                            </span>{" "}
+                                            {penguin.island}
+                                        </p>
+                                        <p>
+                                            <span class="font-semibold">
+                                                Longueur du bec:
+                                            </span>{" "}
+                                            {penguin.culmen_length_mm} mm
+                                        </p>
+                                        <p>
+                                            <span class="font-semibold">
+                                                Profondeur du bec:
+                                            </span>{" "}
+                                            {penguin.culmen_depth_mm} mm
+                                        </p>
+                                        <p>
+                                            <span class="font-semibold">
+                                                Longueur de nageoire:
+                                            </span>{" "}
+                                            {penguin.flipper_length_mm} mm
+                                        </p>
+                                        <p>
+                                            <span class="font-semibold">
+                                                Masse:
+                                            </span>{" "}
+                                            {penguin.body_mass_g} g
+                                        </p>
+                                        <p>
+                                            <span class="font-semibold">
+                                                Sexe:
+                                            </span>{" "}
+                                            {penguin.sex}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    }
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-4 mt-6">
+                <button
+                    class="prev bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                    Précédent
+                </button>
+                <button
+                    class="next bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                    Suivant
+                </button>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Éléments du slider
+        const sliderTrack = document.getElementById("slider-track");
+        const slides = document.querySelectorAll(".slide");
+        const prevBtn = document.querySelector(".prev");
+        const nextBtn = document.querySelector(".next");
+
+        // Éléments de filtrage
+        const filterLinks = document.querySelectorAll("[data-filter]");
+        const filterAll = document.getElementById("filter-all");
+
+        // Variables du slider
+        let currentIndex = 0;
+        let slidesToShow = getSlidesToShow();
+        let visibleSlides = [...slides];
+
+        // Fonction pour déterminer le nombre de slides à afficher selon la taille de l'écran
+        function getSlidesToShow() {
+            if (window.innerWidth >= 1024) return 3; // lg
+            if (window.innerWidth >= 768) return 2; // md
+            return 1; // mobile
+        }
+
+        // Initialiser le slider
+        function initSlider() {
+            updateSliderButtons();
+            updateSlideVisibility();
+        }
+
+        // Mettre à jour l'affichage du slider
+        function updateSlider() {
+            if (!sliderTrack) return;
+
+            const slideWidth = 100 / slidesToShow;
+            sliderTrack.style.transform = `translateX(-${currentIndex * slideWidth}%)`;
+
+            // Mise à jour des boutons
+            updateSliderButtons();
+        }
+
+        // Mettre à jour les boutons de navigation
+        function updateSliderButtons() {
+            if (prevBtn) prevBtn.disabled = currentIndex <= 0;
+            if (nextBtn)
+                nextBtn.disabled =
+                    currentIndex >= visibleSlides.length - slidesToShow;
+        }
+
+        // Mettre à jour la visibilité des slides selon le filtre
+        function updateSlideVisibility(species = null) {
+            visibleSlides = [...slides];
+
+            if (species) {
+                visibleSlides = [...slides].filter(
+                    (slide) => slide.dataset.species === species,
+                );
+            }
+
+            // Cacher toutes les slides d'abord
+            slides.forEach((slide) => {
+                slide.classList.add("hidden");
+            });
+
+            // Afficher uniquement les slides visibles
+            visibleSlides.forEach((slide) => {
+                slide.classList.remove("hidden");
+            });
+
+            // Reset la position du slider
+            currentIndex = 0;
+            updateSlider();
+        }
+
+        // Gestionnaires d'événements pour les boutons du slider
+        if (prevBtn) {
+            prevBtn.addEventListener("click", () => {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    updateSlider();
+                }
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener("click", () => {
+                if (currentIndex < visibleSlides.length - slidesToShow) {
+                    currentIndex++;
+                    updateSlider();
+                }
+            });
+        }
+
+        // Filtrage par espèce
+        filterLinks.forEach((link) => {
+            link.addEventListener("click", (e) => {
+                e.preventDefault();
+
+                // Mise à jour de l'état actif des liens
+                filterLinks.forEach((l) =>
+                    l.classList.remove("bg-blue-500", "text-white"),
+                );
+                filterLinks.forEach((l) =>
+                    l.classList.add("bg-gray-200", "text-gray-800"),
+                );
+                filterAll.classList.remove("bg-blue-500", "text-white");
+                filterAll.classList.add("bg-gray-200", "text-gray-800");
+
+                link.classList.remove("bg-gray-200", "text-gray-800");
+                link.classList.add("bg-blue-500", "text-white");
+
+                // Mise à jour du filtre
+                const species = link.dataset.filter;
+                updateSlideVisibility(species);
+            });
+        });
+
+        // Filtre "Tous"
+        if (filterAll) {
+            filterAll.addEventListener("click", (e) => {
+                e.preventDefault();
+
+                // Mise à jour de l'état actif des liens
+                filterLinks.forEach((l) =>
+                    l.classList.remove("bg-blue-500", "text-white"),
+                );
+                filterLinks.forEach((l) =>
+                    l.classList.add("bg-gray-200", "text-gray-800"),
+                );
+
+                filterAll.classList.remove("bg-gray-200", "text-gray-800");
+                filterAll.classList.add("bg-blue-500", "text-white");
+
+                // Afficher tous les slides
+                updateSlideVisibility();
+            });
+        }
+
+        // Responsivité
+        window.addEventListener("resize", () => {
+            slidesToShow = getSlidesToShow();
+            updateSlider();
+        });
+
+        // Initialisation
+        initSlider();
+    });
+</script>
